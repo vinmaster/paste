@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Paster</title>
+    <meta name="description" content="Paster" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      html,
+      body,
+      #container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    </style>
+
+    <script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        setup();
+      });
+
+      function setup() {
+        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@latest/min/vs' } });
+        window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+
+        let proxy = URL.createObjectURL(
+          new Blob(
+            [
+              `
+	self.MonacoEnvironment = {
+		baseUrl: 'https://unpkg.com/monaco-editor@latest/min/'
+	};
+	importScripts('https://unpkg.com/monaco-editor@latest/min/vs/base/worker/workerMain.js');
+`,
+            ],
+            { type: 'text/javascript' }
+          )
+        );
+
+        require(['vs/editor/editor.main'], function () {
+          window.editor = monaco.editor.create(document.getElementById('container'), {
+            value: ['function x() {', '\tconsole.log("Hello world!");', '}'].join('\n'),
+            language: 'javascript',
+            theme: 'vs-dark',
+          });
+          loadSource();
+          window.editor.focus();
+          window.editor.getModel().onDidChangeContent(event => {
+            setUrlParams();
+          });
+        });
+      }
+
+      function loadSource() {
+        let urlParams = new URLSearchParams(window.location.search);
+        let language = urlParams.get('language');
+
+        if (language) setLanguage(language);
+        if (urlParams.get('source')) {
+          let source = decodeURIComponent(urlParams.get('source')).replace(
+            new RegExp('\\n', 'g'),
+            '\n'
+          );
+          window.editor.setValue(source);
+        }
+      }
+
+      function setUrlParams() {
+        var urlParams = new URLSearchParams(window.location.search);
+        let language = getLanguage();
+        /** @type {string} */
+        let source = encodeURIComponent(window.editor.getValue()).replace(
+          new RegExp('\r?\n', 'g'),
+          '\\n'
+        );
+        if (language) urlParams.set('language', language);
+        if (source !== null) urlParams.set('source', source);
+
+        let url =
+          window.location.protocol +
+          '//' +
+          window.location.host +
+          window.location.pathname +
+          '?' +
+          urlParams.toString();
+        window.history.replaceState({ path: url }, '', url);
+      }
+
+      function getLanguage() {
+        return editor.getModel().getLanguageIdentifier().language;
+      }
+
+      function setLanguage(language) {
+        monaco.editor.setModelLanguage(window.editor.getModel(), language);
+      }
+    </script>
+  </head>
+  <body>
+    <!--[if lt IE 7]>
+      <p class="browsehappy">
+        You are using an <strong>outdated</strong> browser. Please
+        <a href="#">upgrade your browser</a> to improve your experience.
+      </p>
+    <![endif]-->
+
+    <div id="container"></div>
+  </body>
+</html>
