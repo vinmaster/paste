@@ -29,7 +29,8 @@
       });
 
       function setup() {
-        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@latest/min/vs' } });
+        let version = '0.29.1';
+        require.config({ paths: { vs: `https://unpkg.com/monaco-editor@${version}/min/vs` } });
         window.MonacoEnvironment = { getWorkerUrl: () => proxy };
 
         let proxy = URL.createObjectURL(
@@ -37,9 +38,9 @@
             [
               `
 	self.MonacoEnvironment = {
-		baseUrl: 'https://unpkg.com/monaco-editor@latest/min/'
+		baseUrl: 'https://unpkg.com/monaco-editor@${version}/min/'
 	};
-	importScripts('https://unpkg.com/monaco-editor@latest/min/vs/base/worker/workerMain.js');
+	importScripts('https://unpkg.com/monaco-editor@${version}/min/vs/base/worker/workerMain.js');
 `,
             ],
             { type: 'text/javascript' }
